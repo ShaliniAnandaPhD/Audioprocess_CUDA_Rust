@@ -27,20 +27,6 @@ source $HOME/.cargo/env
 rustup default stable
 rustup update
 ```
-if that fails:
-
-cargo build
-
-This will download the cpal crate and compile your project with it included now.
-
-After that completes successfully, go back into src/lib.rs and add the audio initialization code I included:
-
-fn init_audio() {
-  let host = cpal::default_host();
-  
-  let input_device = host.default_input_device().unwrap();
-  let output_device = host.default_output_device().unwrap();
-}
 
 ## Usage
 Here, you'll find detailed instructions on how to utilize the application, including any necessary configuration steps and operational guidelines.
