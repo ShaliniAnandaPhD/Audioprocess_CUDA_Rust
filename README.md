@@ -75,7 +75,7 @@ Contributions to this repository are welcome! If you have any ideas for improvem
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT License].
 
 ## Acknowledgments
 
