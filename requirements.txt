@@ -1,0 +1,35 @@
+# Requirements for Real-Time Audio Processing with Rust and CUDA
+
+## System Requirements
+- Operating System: Compatible with Windows, macOS, and Linux
+- CUDA-capable GPU
+- NVIDIA drivers compatible with your CUDA version
+
+## Software Dependencies
+- Rust (latest stable version)
+  Download and installation instructions: https://www.rust-lang.org/tools/install
+- CUDA Toolkit (version compatible with your GPU)
+  Download and installation instructions: https://developer.nvidia.com/cuda-downloads
+- Cargo (comes with Rust installation)
+
+## Rust Dependencies
+- cpal: Cross-platform audio library
+  Crate link: https://crates.io/crates/cpal
+- audioprocess_cuda_rust: Custom crate for audio processing functionalities
+  (Ensure this crate is included in your project's Cargo.toml)
+
+## Installation Instructions
+1. Ensure Rust and CUDA are installed on your system.
+2. Clone the repository:
+   git clone https://github.com/ShaliniAnandaPhD/Audioprocess_CUDA_Rust.git
+3. Navigate to the project directory:
+   cd Audioprocess_CUDA_Rust
+4. Compile and run the desired application:
+   cd <application_directory>
+   cargo run
+
+## Troubleshooting
+- Verify that you are using a CUDA-capable GPU.
+- Ensure that your NVIDIA drivers and CUDA Toolkit are up to date.
+- Check the Rust compiler errors for dependency issues and resolve them by following the cargo error messages.
+- For audio device-related issues, verify your system's audio settings and ensure the correct input/output devices are selected.
