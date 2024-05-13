@@ -95,5 +95,9 @@ This project is licensed under the [MIT License].
 - The Rust community for providing excellent resources and libraries for audio processing and cross-platform development.
 - The CUDA community for their contributions to parallel computing and GPU acceleration.
 - The developers of the `cpal` crate for simplifying cross-platform audio input and output in Rust.
+- The Rust Programming Language by Steve Klabnik and Carol Nichols
+- Programming Rust: Fast, Safe Systems Development" by Jim Blandy, Jason Orendorff, and Leonora F. S. Tindall
+- Rust by Example by Steve Klabnik
+
 
 
