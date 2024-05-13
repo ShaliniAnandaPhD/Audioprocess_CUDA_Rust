@@ -30,6 +30,19 @@ The Voice Call Noise Cancellation application demonstrates real-time noise cance
 
 The Voice Changer System allows users to modify their voice in real-time by applying various effects. It processes the audio input using the `AudioProcessor` and `CudaProcessor`. The application applies pitch shifting to change the pitch of the user's voice and can be extended to include other voice changing effects like voice distortion, echo, or reverb. The processed audio is then output, creating a fun and interactive voice changing experience.
 
+# Leveraging LLM Capabilities in Audio Processing
+
+This project explores the integration of Large Language Models (LLMs) into various audio processing applications to enhance functionality and user experience. The key areas of focus include:
+
+- Automated documentation and real-time user support
+- Semantic audio content analysis and tagging
+- Real-time language translation and transcription
+- Smart audio editing based on user descriptions
+- Generative audio content creation and augmentation
+- Natural language user interaction and command parsing
+
+By leveraging the power of LLMs, this project aims to revolutionize audio processing applications, providing advanced features such as intelligent content analysis, real-time localization, creative assistance, and intuitive user interaction.
+
 ## Getting Started
 
 To run any of the applications, ensure that you have Rust and CUDA installed on your system. Each application can be run independently using the Rust compiler.
