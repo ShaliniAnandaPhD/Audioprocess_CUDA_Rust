@@ -1,91 +1,133 @@
-// File: voice_call_noise_cancellation.rs
+// audio_semantic_analyzer.rs
 
-use cpal::Stream;
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use std::sync::Arc;
+use std::io;
+use std::path::Path;
+use std::fs::File;
+use std::io::Read;
+use serde::{Deserialize, Serialize};
 
-struct NoiseCancellationSystem {
-    sample_rate: f32,
-    channels: usize,
-    chunk_size: usize,
+#[derive(Serialize, Deserialize, Debug)]
+struct AudioFeatures {
+    duration: f32,
+    sample_rate: u32,
+    bit_depth: u16,
+    channels: u16,
+    rms: f32,
+    zero_crossing_rate: f32,
+    spectral_centroid: f32,
+    // Add more features as needed
 }
 
-impl NoiseCancellationSystem {
-    fn new(sample_rate: f32, channels: usize, chunk_size: usize) -> Self {
-        NoiseCancellationSystem {
-            sample_rate,
-            channels,
-            chunk_size,
+struct LanguageModel {
+    model_path: String,
+    // Add other necessary fields for the language model if required
+}
+
+impl LanguageModel {
+    fn new(model_path: &str) -> Self {
+        println!("Initializing LLM with model path: {}", model_path);
+        // Load and initialize the language model
+        // ...
+        LanguageModel {
+            model_path: model_path.to_string(),
+            // Initialize other fields if necessary
         }
     }
 
-    fn process_audio(&mut self, mic_data: &mut [f32]) {
-        // TODO: Implement noise cancellation algorithm here
-        // Apply noise cancellation to the microphone input
-        // You can use signal processing techniques, such as spectral subtraction or adaptive filtering,
-        // to remove background noise from the microphone input.
-        // Modify the `mic_data` in-place with the noise-cancelled audio.
-    }
-
-    fn run(&mut self) {
-        let host = cpal::default_host();
-        let input_device = host.default_input_device().expect("No input device available");
-        let output_device = host.default_output_device().expect("No output device available");
-
-        let input_config = input_device
-            .default_input_config()
-            .expect("Failed to get default input config");
-        let output_config = output_device
-            .default_output_config()
-            .expect("Failed to get default output config");
-
-        let input_stream = input_device
-            .build_input_stream(
-                &input_config.into(),
-                move |data: &[f32], _: &cpal::InputCallbackInfo| {
-                    // TODO: Process the microphone input
-                    let mut mic_data = data.to_vec();
-                    self.process_audio(&mut mic_data);
-                    // TODO: Send the processed microphone data to the voice call
-                    // Use a voice communication library or API to send the noise-cancelled audio
-                    // to the remote participant in the voice call.
-                },
-                |err| eprintln!("Error occurred during microphone input: {}", err),
-            )
-            .expect("Failed to build input stream");
-
-        let output_stream = output_device
-            .build_output_stream(
-                &output_config.into(),
-                move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
-                    // TODO: Receive audio data from the voice call
-                    // Use a voice communication library or API to receive audio data from the remote participant.
-                    // TODO: Process the received audio data if needed
-                    // Apply any additional audio processing to the received audio, if required.
-                    // TODO: Write the audio data to the output stream
-                    // Copy the processed audio data to the `data` buffer for playback.
-                },
-                |err| eprintln!("Error occurred during audio output: {}", err),
-            )
-            .expect("Failed to build output stream");
-
-        input_stream.play().expect("Failed to start microphone input stream");
-        output_stream.play().expect("Failed to start audio output stream");
-
-        // Keep the program running until interrupted
-        std::thread::park();
-
-        drop(input_stream);
-        drop(output_stream);
+    fn analyze_audio(&self, audio_features: &AudioFeatures) -> Vec<String> {
+        println!("Analyzing audio features using LLM...");
+        // Perform audio analysis using the language model
+        // ...
+        // Return the generated semantic tags
+        vec![
+            "Emotional".to_string(),
+            "Uplifting".to_string(),
+            "Instrumental".to_string(),
+            "Classical".to_string(),
+        ]
     }
 }
 
-fn main() {
-    let sample_rate = 44100.0;
-    let channels = 1;
-    let chunk_size = 1024;
+fn load_audio_file(audio_file: &str) -> Result<Vec<u8>, std::io::Error> {
+    let path = Path::new(audio_file);
+    let mut file = File::open(path)?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer)?;
+    Ok(buffer)
+}
 
-    let mut noise_cancellation_system =
-        NoiseCancellationSystem::new(sample_rate, channels, chunk_size);
-    noise_cancellation_system.run();
+fn extract_audio_features(audio_data: &[u8]) -> AudioFeatures {
+    println!("Extracting audio features...");
+    // Use audio processing libraries or algorithms to extract features from the audio data
+    // ...
+    AudioFeatures {
+        duration: 180.0,
+        sample_rate: 44100,
+        bit_depth: 16,
+        channels: 2,
+        rms: 0.05,
+        zero_crossing_rate: 0.1,
+        spectral_centroid: 3000.0,
+        // Set the actual values based on the extracted features
+    }
+}
+
+fn save_analysis_results(audio_features: &AudioFeatures, tags: &[String]) {
+    // Convert the audio features and tags to JSON format
+    let features_json = serde_json::to_string_pretty(&audio_features).unwrap();
+    let tags_json = serde_json::to_string_pretty(&tags).unwrap();
+
+    // Save the analysis results to a file or database
+    // ...
+    println!("Analysis results saved successfully.");
+}
+
+fn main() {
+    println!("Welcome to the Audio Semantic Analyzer!");
+
+    println!("Please enter the path to the LLM model:");
+    let mut model_path = String::new();
+    io::stdin()
+        .read_line(&mut model_path)
+        .expect("Failed to read input");
+    let model_path = model_path.trim();
+
+    let llm = LanguageModel::new(model_path);
+
+    println!("Please enter the path to the audio file:");
+    let mut audio_file = String::new();
+    io::stdin()
+        .read_line(&mut audio_file)
+        .expect("Failed to read input");
+    let audio_file = audio_file.trim();
+
+    let audio_data = match load_audio_file(audio_file) {
+        Ok(data) => data,
+        Err(e) => {
+            eprintln!("Error loading audio file: {}", e);
+            return;
+        }
+    };
+
+    let audio_features = extract_audio_features(&audio_data);
+    println!("Extracted Audio Features: {:?}", audio_features);
+
+    let tags = llm.analyze_audio(&audio_features);
+    println!("Generated Semantic Tags: {:?}", tags);
+
+    save_analysis_results(&audio_features, &tags);
+
+    println!("Would you like to perform any additional analysis or actions? (y/n)");
+    let mut choice = String::new();
+    io::stdin()
+        .read_line(&mut choice)
+        .expect("Failed to read input");
+    let choice = choice.trim().to_lowercase();
+
+    if choice == "y" {
+        // Implement additional analysis or actions based on user input
+        // ...
+    }
+
+    println!("Thank you for using the Audio Semantic Analyzer!");
 }

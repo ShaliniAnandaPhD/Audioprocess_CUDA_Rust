@@ -3,11 +3,13 @@
 use audioprocess_cuda_rust::{AudioProcessor, CudaProcessor};
 use cpal::Stream;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use std::collections::VecDeque;
 
 struct BinauralAudioSimulator {
     audio_processor: AudioProcessor,
     cuda_processor: CudaProcessor,
+    buffer: Arc<Mutex<VecDeque<Vec<f32>>>>,
 }
 
 impl BinauralAudioSimulator {
@@ -17,6 +19,7 @@ impl BinauralAudioSimulator {
         BinauralAudioSimulator {
             audio_processor,
             cuda_processor,
+            buffer: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
 
@@ -24,8 +27,43 @@ impl BinauralAudioSimulator {
         // Apply binaural audio processing using the CudaProcessor
         self.cuda_processor.apply_binaural_processing(input_data, output_data);
 
-        // TODO: Implement additional audio processing techniques for enhanced 3D audio simulation
-        // Example: Apply head-related transfer functions (HRTFs), room acoustics simulation, or audio spatialization
+        // Implement additional audio processing techniques for enhanced 3D audio simulation
+        // Apply head-related transfer functions (HRTFs)
+        self.apply_hrtf(output_data);
+
+        // Apply room acoustics simulation
+        self.apply_room_acoustics(output_data);
+
+        // Apply audio spatialization
+        self.apply_spatialization(output_data);
+    }
+
+    fn apply_hrtf(&self, data: &mut [f32]) {
+        // Example HRTF processing: apply simple transformation for demonstration
+        for sample in data.iter_mut() {
+            *sample *= 0.9; // Simple attenuation to simulate HRTF
+        }
+        println!("Applied HRTF.");
+    }
+
+    fn apply_room_acoustics(&self, data: &mut [f32]) {
+        // Example room acoustics: apply reverb effect
+        for sample in data.iter_mut() {
+            *sample += 0.2 * *sample; // Simple reverb effect
+        }
+        println!("Applied room acoustics simulation.");
+    }
+
+    fn apply_spatialization(&self, data: &mut [f32]) {
+        // Example spatialization: alternate samples for left/right channels
+        for (i, sample) in data.iter_mut().enumerate() {
+            if i % 2 == 0 {
+                *sample *= 0.8; // Simulate left channel attenuation
+            } else {
+                *sample *= 1.2; // Simulate right channel amplification
+            }
+        }
+        println!("Applied audio spatialization.");
     }
 
     fn run(&mut self) {
@@ -40,17 +78,22 @@ impl BinauralAudioSimulator {
             .default_output_config()
             .expect("Failed to get default output config");
 
+        let buffer = Arc::clone(&self.buffer);
+
         let input_stream = input_device
             .build_input_stream(
                 &input_config.into(),
-                move |data: &[f32], _: &cpal::InputCallbackInfo| {
-                    let num_frames = data.len() / self.audio_processor.channels;
-                    let mut output_data = vec![0.0; num_frames * self.audio_processor.channels];
+                {
+                    let buffer = Arc::clone(&buffer);
+                    move |data: &[f32], _: &cpal::InputCallbackInfo| {
+                        let num_frames = data.len() / 2;
+                        let mut output_data = vec![0.0; num_frames * 2];
 
-                    self.process_audio(data, &mut output_data);
+                        self.process_audio(data, &mut output_data);
 
-                    // TODO: Pass the processed audio data to the output stream
-                    // Example: Use a buffer or a queue to transfer the processed audio data
+                        let mut buffer = buffer.lock().unwrap();
+                        buffer.push_back(output_data);
+                    }
                 },
                 |err| eprintln!("Error occurred during audio input: {}", err),
             )
@@ -59,12 +102,19 @@ impl BinauralAudioSimulator {
         let output_stream = output_device
             .build_output_stream(
                 &output_config.into(),
-                move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
-                    // TODO: Retrieve the processed audio data from the input stream
-                    // Example: Use a buffer or a queue to receive the processed audio data
-
-                    // TODO: Write the processed audio data to the output buffer
-                    // Example: Copy the processed audio data to the `data` buffer for playback
+                {
+                    let buffer = Arc::clone(&buffer);
+                    move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
+                        let mut buffer = buffer.lock().unwrap();
+                        if let Some(output_data) = buffer.pop_front() {
+                            data.copy_from_slice(&output_data);
+                        } else {
+                            // Clear the output buffer if no processed data is available
+                            for sample in data.iter_mut() {
+                                *sample = 0.0;
+                            }
+                        }
+                    }
                 },
                 |err| eprintln!("Error occurred during audio output: {}", err),
             )
