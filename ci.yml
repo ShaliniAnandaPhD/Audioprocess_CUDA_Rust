@@ -1,0 +1,64 @@
+# .github/workflows/ci.yml
+
+name: CI
+
+# Run this workflow on pushes to the main branch and on pull requests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Define the jobs to be run
+jobs:
+  build:
+
+    # Define the job environment
+    runs-on: ubuntu-latest
+
+    # Steps to be executed
+    steps:
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Set up Rust environment
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      # Cache the Cargo registry to speed up the build process
+      - name: Cache Cargo registry
+        uses: actions/cache@v2
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      # Cache the Cargo build directory to speed up the build process
+      - name: Cache Cargo build
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+
+      # Install dependencies
+      - name: Install dependencies
+        run: cargo build --release
+
+      # Run tests
+      - name: Run tests
+        run: cargo test --verbose
+
+      # Build the project
+      - name: Build project
+        run: cargo build --release
+
