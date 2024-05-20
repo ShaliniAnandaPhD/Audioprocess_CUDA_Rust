@@ -1,0 +1,12 @@
+[package]
+name = "rust-pytorch-music-benchmarks"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pyo3 = { version = "0.16.5", features = ["extension-module"] }
+tch = "0.7.0"
+
+[lib]
+name = "rust_music_benchmarks"
+crate-type = ["cdylib"]
