@@ -185,6 +185,8 @@ This repository contains a collection of real-time audio processing applications
 
 ## Getting Started
 
+More detailed instructions here if you are a beginner: https://shalini-ananda-phd.notion.site/Unleashing-the-Power-of-Real-Time-Audio-Processing-with-Rust-CUDA-and-PyTorch-01be5f6c65e64621a2bfd22265e281d3
+
 ### Prerequisites
 Before running the code in this repository, ensure that you have the following prerequisites installed:
 
