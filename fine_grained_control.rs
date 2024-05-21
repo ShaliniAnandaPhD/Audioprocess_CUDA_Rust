@@ -15,6 +15,7 @@ use std::simd::{f32x4, SimdFloat};
 /// * `Vec<f32>` - The generated audio samples.
 #[pyfunction]
 fn generate_audio_samples_simd(sample_rate: u32, num_samples: usize, frequency: f32) -> Vec<f32> {
+    // Initialize a vector to hold the generated samples
     let mut samples = vec![0.0; num_samples];
     let scale = 2.0 * std::f32::consts::PI * frequency / sample_rate as f32;
 
@@ -30,12 +31,18 @@ fn generate_audio_samples_simd(sample_rate: u32, num_samples: usize, frequency: 
         let phase = t * f32x4::splat(scale);
         let chunk = phase.sin();
         chunk.write_to_slice(&mut samples[i * 4..i * 4 + 4]);
+
+        // Possible Error: If `write_to_slice` panics, ensure the slice is the correct length
+        // Solution: Ensure the slice length matches the chunk length (4 in this case)
     }
 
     // Process remaining samples individually
     for i in num_chunks * 4..num_samples {
         let t = i as f32;
         samples[i] = (t * scale).sin();
+
+        // Possible Error: Floating point precision issues
+        // Solution: Verify the generated values are within acceptable error margins
     }
 
     samples
@@ -54,12 +61,16 @@ fn generate_audio_samples_simd(sample_rate: u32, num_samples: usize, frequency: 
 /// * `Vec<f32>` - The generated audio samples.
 #[pyfunction]
 fn generate_audio_samples_standard(sample_rate: u32, num_samples: usize, frequency: f32) -> Vec<f32> {
+    // Initialize a vector to hold the generated samples
     let mut samples = vec![0.0; num_samples];
     let scale = 2.0 * std::f32::consts::PI * frequency / sample_rate as f32;
 
     for i in 0..num_samples {
         let t = i as f32;
         samples[i] = (t * scale).sin();
+
+        // Possible Error: Floating point precision issues
+        // Solution: Verify the generated values are within acceptable error margins
     }
 
     samples
