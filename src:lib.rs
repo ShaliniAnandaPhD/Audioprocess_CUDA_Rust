@@ -20,19 +20,28 @@ fn rust_generate_music(model_path: String, num_samples: i64, device: String) -> 
     let device = match device.as_str() {
         "cpu" => Device::Cpu,
         "cuda" => Device::Cuda(0),
+        // Handle invalid device input
         _ => return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Invalid device")),
     };
 
     // Load the pre-trained PyTorch model
-    let model = tch::CModule::load(model_path)?;
+    let model = tch::CModule::load(&model_path)
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to load model: {}", e)))?;
+    
+    // Move the model to the specified device
     let model = model.to_device(device);
 
     let mut music_samples = Vec::new();
 
     // Generate music samples
     for _ in 0..num_samples {
+        // Generate random noise as input for the model
         let random_noise = Tensor::rand(&[1, 128], kind::FLOAT_CPU).to_device(device);
-        let output = model.forward_ts(&[random_noise]).unwrap();
+
+        // Perform forward pass to generate music
+        let output = model.forward_ts(&[random_noise])
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Model forward pass failed: {}", e)))?;
+        
         music_samples.push(output);
     }
 
