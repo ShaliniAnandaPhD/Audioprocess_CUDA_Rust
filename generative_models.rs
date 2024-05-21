@@ -10,6 +10,7 @@ struct Generator {
 }
 
 impl Generator {
+    // Constructor for the generator model
     fn new(latent_size: i64, hidden_size: i64, output_size: i64) -> Self {
         let vs = nn::VarStore::new(Device::Cpu);
         let model = nn::seq()
@@ -20,6 +21,7 @@ impl Generator {
         Generator { model }
     }
 
+    // Forward pass of the generator model
     fn forward(&self, input: &Tensor) -> Tensor {
         self.model.forward(input)
     }
@@ -31,6 +33,7 @@ struct Discriminator {
 }
 
 impl Discriminator {
+    // Constructor for the discriminator model
     fn new(input_size: i64, hidden_size: i64) -> Self {
         let vs = nn::VarStore::new(Device::Cpu);
         let model = nn::seq()
@@ -41,6 +44,7 @@ impl Discriminator {
         Discriminator { model }
     }
 
+    // Forward pass of the discriminator model
     fn forward(&self, input: &Tensor) -> Tensor {
         self.model.forward(input)
     }
@@ -54,6 +58,7 @@ struct Encoder {
 }
 
 impl Encoder {
+    // Constructor for the encoder model
     fn new(input_size: i64, hidden_size: i64, latent_size: i64) -> Self {
         let vs = nn::VarStore::new(Device::Cpu);
         let model = nn::seq()
@@ -64,6 +69,7 @@ impl Encoder {
         Encoder { model, mu, log_var }
     }
 
+    // Forward pass of the encoder model
     fn forward(&self, input: &Tensor) -> (Tensor, Tensor, Tensor) {
         let hidden = self.model.forward(input);
         let mu = self.mu.forward(&hidden);
@@ -81,6 +87,7 @@ struct Decoder {
 }
 
 impl Decoder {
+    // Constructor for the decoder model
     fn new(latent_size: i64, hidden_size: i64, output_size: i64) -> Self {
         let vs = nn::VarStore::new(Device::Cpu);
         let model = nn::seq()
@@ -90,6 +97,7 @@ impl Decoder {
         Decoder { model }
     }
 
+    // Forward pass of the decoder model
     fn forward(&self, input: &Tensor) -> Tensor {
         self.model.forward(input)
     }
@@ -105,20 +113,24 @@ fn train_gan(
     latent_size: i64,
     learning_rate: f64,
 ) {
+    // Convert the input data to a tensor and reshape it
     let data_tensor = Tensor::of_slice(data).reshape(&[-1, data.len() as i64]);
     let dataset = data_tensor.to_device(Device::Cpu);
 
+    // Create optimizers for the generator and discriminator
     let mut generator_optimizer = nn::Adam::default().build(&generator.model.vars(), learning_rate).unwrap();
     let mut discriminator_optimizer = nn::Adam::default().build(&discriminator.model.vars(), learning_rate).unwrap();
 
     let mut rng = rand::thread_rng();
 
+    // Training loop
     for epoch in 0..epochs {
         let mut epoch_loss_g = 0.0;
         let mut epoch_loss_d = 0.0;
 
         let num_batches = dataset.size()[0] / batch_size;
 
+        // Iterate over batches
         for i in 0..num_batches {
             // Train the discriminator
             let offset = i * batch_size;
@@ -154,9 +166,11 @@ fn train_gan(
             epoch_loss_g += g_loss.double_value(&[]);
         }
 
+        // Calculate average losses for the epoch
         let avg_loss_g = epoch_loss_g / num_batches as f64;
         let avg_loss_d = epoch_loss_d / num_batches as f64;
 
+        // Print the epoch losses
         println!("Epoch [{}/{}], Generator Loss: {:.4}, Discriminator Loss: {:.4}",
                  epoch + 1, epochs, avg_loss_g, avg_loss_d);
     }
@@ -171,28 +185,36 @@ fn train_vae(
     batch_size: i64,
     learning_rate: f64,
 ) {
+    // Convert the input data to a tensor and reshape it
     let data_tensor = Tensor::of_slice(data).reshape(&[-1, data.len() as i64]);
     let dataset = data_tensor.to_device(Device::Cpu);
 
+    // Create optimizers for the encoder and decoder
     let mut encoder_optimizer = nn::Adam::default().build(&encoder.model.vars(), learning_rate).unwrap();
     let mut decoder_optimizer = nn::Adam::default().build(&decoder.model.vars(), learning_rate).unwrap();
 
+    // Training loop
     for epoch in 0..epochs {
         let mut epoch_loss = 0.0;
 
         let num_batches = dataset.size()[0] / batch_size;
 
+        // Iterate over batches
         for i in 0..num_batches {
             let offset = i * batch_size;
             let batch = dataset.narrow(0, offset, batch_size);
 
+            // Encode the input batch
             let (z, mu, log_var) = encoder.forward(&batch);
+            // Decode the latent representation
             let reconstruction = decoder.forward(&z);
 
+            // Calculate the reconstruction loss and KL divergence
             let reconstruction_loss = reconstruction.mse_loss(&batch, tch::Reduction::Mean);
             let kl_divergence = -0.5 * (1.0 + log_var - mu.pow(2.0) - log_var.exp()).mean(tch::Kind::Float);
             let loss = reconstruction_loss + kl_divergence;
 
+            // Perform backward pass and optimization
             encoder_optimizer.zero_grad();
             decoder_optimizer.zero_grad();
             loss.backward();
@@ -202,8 +224,10 @@ fn train_vae(
             epoch_loss += loss.double_value(&[]);
         }
 
+        // Calculate average loss for the epoch
         let avg_loss = epoch_loss / num_batches as f64;
 
+        // Print the epoch loss
         println!("Epoch [{}/{}], Loss: {:.4}", epoch + 1, epochs, avg_loss);
     }
 }
@@ -223,9 +247,11 @@ fn generative_models(_py: Python, m: &PyModule) -> PyResult<()> {
         batch_size: i64,
         learning_rate: f64,
     ) -> PyResult<()> {
+        // Create the generator and discriminator models
         let generator = Generator::new(latent_size, hidden_size, output_size);
         let discriminator = Discriminator::new(output_size, hidden_size);
 
+        // Train the GAN model
         train_gan(&generator, &discriminator, &data, epochs, batch_size, latent_size, learning_rate);
 
         Ok(())
@@ -243,9 +269,11 @@ fn generative_models(_py: Python, m: &PyModule) -> PyResult<()> {
         batch_size: i64,
         learning_rate: f64,
     ) -> PyResult<()> {
+        // Create the encoder and decoder models
         let encoder = Encoder::new(input_size, hidden_size, latent_size);
         let decoder = Decoder::new(latent_size, hidden_size, input_size);
 
+        // Train the VAE model
         train_vae(&encoder, &decoder, &data, epochs, batch_size, learning_rate);
 
         Ok(())
