@@ -17,19 +17,25 @@ use tch::{nn, Device, Tensor};
 fn generate_audio_samples_optimized(model_path: &str, num_samples: usize) -> PyResult<Vec<f32>> {
     // Load the pre-trained PyTorch model
     let device = Device::cuda_if_available();
-    let model = tch::CModule::load(model_path)?;
+    let model = match tch::CModule::load(model_path) {
+        Ok(model) => model,
+        Err(e) => return Err(PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to load model: {}", e))),
+    };
     let model = model.to(device);
 
     // Generate random noise as input to the model
     let noise = Tensor::rand(&[1, 100], kind::FLOAT_CPU).to(device);
 
     // Use the loaded model to generate audio samples
-    let output = model
-        .forward_ts(&[noise])?
-        .squeeze()
-        .to(Device::Cpu)
-        .data()
-        .as_slice::<f32>()?;
+    let output = match model.forward_ts(&[noise]) {
+        Ok(output) => output,
+        Err(e) => return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Failed to generate audio: {}", e))),
+    };
+    let output = output.squeeze().to(Device::Cpu);
+    let output = match output.data().as_slice::<f32>() {
+        Ok(output) => output,
+        Err(e) => return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Failed to convert tensor to slice: {}", e))),
+    };
 
     // Apply architecture-specific optimizations
     let mut samples = Vec::with_capacity(num_samples);
