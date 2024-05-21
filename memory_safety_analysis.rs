@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
+use numpy::{IntoPyArray, PyArray1};
 use std::slice;
 
 /// Generates audio samples using a Rust function.
@@ -34,29 +35,38 @@ fn generate_audio_samples_rust(sample_rate: u32, num_samples: usize) -> Vec<f32>
 ///
 /// # Returns
 ///
-/// * `&PyArray1<f32>` - The generated audio samples as a PyTorch tensor.
+/// * `&PyArray1<f32>` - The generated audio samples as a NumPy array.
 #[pyfunction]
 fn generate_audio_samples_python(
     py: Python,
     sample_rate: u32,
     num_samples: usize,
-) -> &PyArray1<f32> {
+) -> PyResult<&PyArray1<f32>> {
+    // Create a new NumPy array to store the audio samples
     let samples = PyArray1::zeros(py, num_samples, false);
-    let frequency = 440.0; // Frequency of the generated tone (A4 note)
 
+    let frequency = 440.0; // Frequency of the generated tone (A4 note)
     let mut i = 0;
     while i < num_samples {
         let t = i as f32 / sample_rate as f32;
-        samples.as_slice_mut().unwrap()[i] = (2.0 * std::f32::consts::PI * frequency * t).sin();
+        // Get the mutable slice from the NumPy array to modify its elements
+        let slice = samples.as_slice_mut().map_err(|e| {
+            PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Failed to get mutable slice: {}", e))
+        })?;
+        slice[i] = (2.0 * std::f32::consts::PI * frequency * t).sin();
         i += 1;
     }
 
-    samples
+    Ok(samples)
 }
 
 /// Demonstrates the memory safety benefits of using Rust for audio generation.
+///
+/// # Arguments
+///
+/// * `py` - Python GIL reference
 #[pyfunction]
-fn analyze_memory_safety(py: Python) {
+fn analyze_memory_safety(py: Python) -> PyResult<()> {
     let sample_rate = 44100;
     let num_samples = 1024;
 
@@ -64,11 +74,15 @@ fn analyze_memory_safety(py: Python) {
     let rust_samples = generate_audio_samples_rust(sample_rate, num_samples);
 
     // Generate audio samples using Python
-    let py_samples = generate_audio_samples_python(py, sample_rate, num_samples);
+    let py_samples = generate_audio_samples_python(py, sample_rate, num_samples)?;
 
     // Print the generated audio samples
     println!("Rust samples: {:?}", rust_samples);
-    println!("Python samples: {:?}", py_samples.as_slice().unwrap());
+    println!("Python samples: {:?}", py_samples.as_slice().map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Failed to get slice: {}", e))
+    })?);
+
+    Ok(())
 }
 
 /// A Python module implemented in Rust.
