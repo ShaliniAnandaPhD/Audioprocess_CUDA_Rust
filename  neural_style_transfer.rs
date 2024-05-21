@@ -1,23 +1,25 @@
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-use std::sync::Arc;
-use tch::{nn, Device, Tensor};
+use pyo3::prelude::*; // Import PyO3 for Python interoperability
+use pyo3::wrap_pyfunction; // Import function wrapping for PyO3
+use std::sync::Arc; // Import Arc for thread-safe reference counting
+use tch::{nn, Device, Tensor}; // Import Torch for tensor operations and neural networks
 
 // Define the audio content representation model
 struct AudioContentModel {
-    model: nn::Sequential,
+    model: nn::Sequential, // Sequential neural network model
 }
 
 impl AudioContentModel {
+    // Constructor for creating a new audio content model
     fn new(input_size: i64, hidden_size: i64, output_size: i64) -> Self {
-        let vs = nn::VarStore::new(Device::Cpu);
+        let vs = nn::VarStore::new(Device::Cpu); // Variable store for model parameters
         let model = nn::seq()
-            .add(nn::linear(&vs.root(), input_size, hidden_size, Default::default()))
-            .add_fn(|xs| xs.relu())
-            .add(nn::linear(&vs.root(), hidden_size, output_size, Default::default()));
+            .add(nn::linear(&vs.root(), input_size, hidden_size, Default::default())) // Input layer
+            .add_fn(|xs| xs.relu()) // Activation function
+            .add(nn::linear(&vs.root(), hidden_size, output_size, Default::default())); // Output layer
         AudioContentModel { model }
     }
 
+    // Forward pass through the model
     fn forward(&self, input: &Tensor) -> Tensor {
         self.model.forward(input)
     }
@@ -25,19 +27,21 @@ impl AudioContentModel {
 
 // Define the audio style representation model
 struct AudioStyleModel {
-    model: nn::Sequential,
+    model: nn::Sequential, // Sequential neural network model
 }
 
 impl AudioStyleModel {
+    // Constructor for creating a new audio style model
     fn new(input_size: i64, hidden_size: i64, output_size: i64) -> Self {
-        let vs = nn::VarStore::new(Device::Cpu);
+        let vs = nn::VarStore::new(Device::Cpu); // Variable store for model parameters
         let model = nn::seq()
-            .add(nn::linear(&vs.root(), input_size, hidden_size, Default::default()))
-            .add_fn(|xs| xs.relu())
-            .add(nn::linear(&vs.root(), hidden_size, output_size, Default::default()));
+            .add(nn::linear(&vs.root(), input_size, hidden_size, Default::default())) // Input layer
+            .add_fn(|xs| xs.relu()) // Activation function
+            .add(nn::linear(&vs.root(), hidden_size, output_size, Default::default())); // Output layer
         AudioStyleModel { model }
     }
 
+    // Forward pass through the model
     fn forward(&self, input: &Tensor) -> Tensor {
         self.model.forward(input)
     }
@@ -45,19 +49,21 @@ impl AudioStyleModel {
 
 // Define the audio decoder model
 struct AudioDecoderModel {
-    model: nn::Sequential,
+    model: nn::Sequential, // Sequential neural network model
 }
 
 impl AudioDecoderModel {
+    // Constructor for creating a new audio decoder model
     fn new(input_size: i64, hidden_size: i64, output_size: i64) -> Self {
-        let vs = nn::VarStore::new(Device::Cpu);
+        let vs = nn::VarStore::new(Device::Cpu); // Variable store for model parameters
         let model = nn::seq()
-            .add(nn::linear(&vs.root(), input_size, hidden_size, Default::default()))
-            .add_fn(|xs| xs.relu())
-            .add(nn::linear(&vs.root(), hidden_size, output_size, Default::default()));
+            .add(nn::linear(&vs.root(), input_size, hidden_size, Default::default())) // Input layer
+            .add_fn(|xs| xs.relu()) // Activation function
+            .add(nn::linear(&vs.root(), hidden_size, output_size, Default::default())); // Output layer
         AudioDecoderModel { model }
     }
 
+    // Forward pass through the model
     fn forward(&self, input: &Tensor) -> Tensor {
         self.model.forward(input)
     }
@@ -130,21 +136,32 @@ fn neural_style_transfer(_py: Python, m: &PyModule) -> PyResult<()> {
         content_weight: f64,
         style_weight: f64,
     ) -> PyResult<Vec<f32>> {
-        // Load the trained audio content, style, and decoder models
+        // Load the trained audio content model
         let content_model = tch::CModule::load(content_model_path)?;
         let content_model = AudioContentModel {
             model: content_model.sequential(),
         };
 
+        // Possible error: Model file not found or incompatible format
+        // Solution: Ensure the model file paths are correct and the files are in the expected format.
+
+        // Load the trained audio style model
         let style_model = tch::CModule::load(style_model_path)?;
         let style_model = AudioStyleModel {
             model: style_model.sequential(),
         };
 
+        // Possible error: Model file not found or incompatible format
+        // Solution: Ensure the model file paths are correct and the files are in the expected format.
+
+        // Load the trained audio decoder model
         let decoder_model = tch::CModule::load(decoder_model_path)?;
         let decoder_model = AudioDecoderModel {
             model: decoder_model.sequential(),
         };
+
+        // Possible error: Model file not found or incompatible format
+        // Solution: Ensure the model file paths are correct and the files are in the expected format.
 
         // Perform neural style transfer
         let output_audio = neural_style_transfer(
