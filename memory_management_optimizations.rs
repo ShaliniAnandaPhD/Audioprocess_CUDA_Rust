@@ -12,9 +12,16 @@ struct AudioGenerator {
 impl AudioGenerator {
     // Constructor to create a new audio generator with a pre-trained model
     fn new(model_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        // Determine if a CUDA device is available, else use CPU
         let device = Device::cuda_if_available();
-        let model = nn::VarStore::new(device).load(model_path)?;
-        let model = nn::Sequential::new(model.root(), &[]);
+
+        // Load the pre-trained model from the specified path
+        let mut vs = nn::VarStore::new(device);
+        let model = nn::Sequential::load(model_path, &vs)?;
+
+        // Possible Error: Model file not found or invalid format
+        // Solution: Ensure the model path is correct and the model file is properly formatted.
+
         Ok(Self { model, device })
     }
 
@@ -65,6 +72,9 @@ fn memory_management_optimizations(_py: Python, m: &PyModule) -> PyResult<()> {
                 input_tensor
             };
 
+            // Possible Error: Unsafe block misuse or invalid memory access
+            // Solution: Ensure the input vector's lifetime is properly managed and the data is correctly copied.
+
             // Generate audio samples using the AudioGenerator
             let output_tensor = self.generator.generate(&input_tensor);
 
@@ -74,6 +84,9 @@ fn memory_management_optimizations(_py: Python, m: &PyModule) -> PyResult<()> {
                 let slice = std::slice::from_raw_parts(output_data.as_ptr() as *const f32, output_data.len());
                 Vec::from_raw_parts(slice.as_ptr() as *mut f32, slice.len(), slice.len())
             };
+
+            // Possible Error: Unsafe block misuse or invalid memory access
+            // Solution: Ensure the output tensor's data is correctly managed and no double free occurs.
 
             Ok(output)
         }
