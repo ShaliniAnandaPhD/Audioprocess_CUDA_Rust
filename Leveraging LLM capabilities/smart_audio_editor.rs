@@ -56,29 +56,22 @@ impl LanguageModel {
 
 fn apply_audio_edits(audio_path: &str, edits: &[String], effect_settings: &[String]) {
     // Load the audio file
-    let audio_file = std::fs::File::open(audio_path).expect("Failed to open audio file");
-    let mut decoder = Decoder::new(audio_file).expect("Failed to create decoder");
-    let audio_info = decoder.size_hint().0;
-    let sample_rate = decoder.sample_rate();
-    let num_channels = decoder.channels();
-
+    let audio_file = File::open(audio_path).expect("Failed to open audio file");
+    let decoder = Decoder::new(audio_file).expect("Failed to create decoder");
+    
     // Create a new audio file for the edited audio
     let edited_audio_path = "edited_audio.wav";
-    let spec = rodio::AudioSpecification {
-        channels: num_channels,
-        sample_rate: sample_rate,
-        bits_per_sample: 16,
-    };
+    let spec = rodio::OutputStreamConfig::default();
     let mut edited_audio_file = File::create(edited_audio_path).expect("Failed to create edited audio file");
 
     // Create a resampler to process the audio
     let mut resampler = FftFixedInOut::<f32>::new(
-        audio_info as usize,
+        spec.sample_rate.0 as usize,
         1.0,
         2,
-        FftPlanner::new().plan_fft_forward(audio_info as usize),
-        FftPlanner::new().plan_fft_inverse(audio_info as usize),
-    );
+        FftPlanner::new().plan_fft_forward(spec.sample_rate.0 as usize),
+        FftPlanner::new().plan_fft_inverse(spec.sample_rate.0 as usize),
+    ).expect("Failed to create resampler");
 
     // Create an output stream and a sink for playing the edited audio
     let (_stream, stream_handle) = OutputStream::try_default().expect("Failed to get default output stream");
@@ -87,12 +80,12 @@ fn apply_audio_edits(audio_path: &str, edits: &[String], effect_settings: &[Stri
     // Process the audio and apply the edits and effects
     let mut audio_data = Vec::new();
     while let Some(frame) = decoder.next() {
-        audio_data.extend_from_slice(&frame);
+        audio_data.extend_from_slice(&frame.expect("Failed to read audio frame"));
     }
 
-    let mut audio_buffer = vec![Complex::zero(); audio_info as usize];
+    let mut audio_buffer = vec![Complex::zero(); spec.sample_rate.0 as usize];
     for (i, sample) in audio_data.iter().enumerate() {
-        audio_buffer[i] = Complex::new(*sample, 0.0);
+        audio_buffer[i] = Complex::new(*sample as f32, 0.0);
     }
 
     // Apply the suggested edits
@@ -117,7 +110,7 @@ fn apply_audio_edits(audio_path: &str, edits: &[String], effect_settings: &[Stri
     }
 
     // Play the edited audio
-    let edited_audio_file = std::fs::File::open(edited_audio_path).expect("Failed to open edited audio file");
+    let edited_audio_file = File::open(edited_audio_path).expect("Failed to open edited audio file");
     let decoder = Decoder::new(edited_audio_file).expect("Failed to create decoder for edited audio");
     sink.append(decoder);
     sink.sleep_until_end();
@@ -189,3 +182,21 @@ fn main() {
 
     println!("Thank you for using the Smart Audio Editor!");
 }
+
+// Possible Errors and Solutions:
+// - **Model Loading Errors**: If the model path is invalid or the model fails to load, the program will panic. 
+//   Solution: Ensure the model path is correct and handle errors gracefully using `Result` and `?` operator.
+// - **Audio File Errors**: If the audio file path is invalid or the file cannot be opened/read, the program will panic. 
+//   Solution: Check if the file exists before attempting to open it, and handle errors using `Result` and `?` operator.
+// - **Resampler Errors**: If the resampler fails to process the audio data, the program will panic. 
+//   Solution: Handle errors using `Result` and `?` operator.
+// - **Output File Errors**: If the output file cannot be created or written to, the program will panic. 
+//   Solution: Handle errors using `Result` and `?` operator, and ensure proper file permissions.
+// - **User Input Errors**: If the user provides invalid input, the program may behave unexpectedly. 
+//   Solution: Validate user input and provide clear error messages.
+
+// Expected Outputs:
+// - **Model Loading**: A message indicating that the model is being loaded from the specified path.
+// - **Audio Editing**: Suggested edits and effect settings based on the user's description.
+// - **Audio Processing**: Messages indicating the application of edits and effects to the audio file.
+// - **Final Output**: A message confirming that the edits and effects have been applied, and the edited audio is played.

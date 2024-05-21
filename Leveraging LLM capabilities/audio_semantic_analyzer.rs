@@ -28,15 +28,17 @@ impl LanguageModel {
     }
 
     // Analyze audio content and generate semantic tags
-    fn analyze_audio(&self, audio_file: &str) -> Vec<String> {
+    fn analyze_audio(&self, audio_file: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         // Load the audio file
         let path = Path::new(audio_file);
-        let file = File::open(path).expect("Failed to open the audio file");
+        let file = File::open(path)?;
         let reader = BufReader::new(file);
-        let mut audio_reader = hound::WavReader::new(reader).expect("Failed to read the WAV file");
+        let mut audio_reader = hound::WavReader::new(reader)?;
+
+        // Read audio samples and normalize them
         let samples: Vec<f32> = audio_reader.samples::<i16>()
-            .map(|s| s.expect("Failed to read audio sample") as f32 / i16::MAX as f32)
-            .collect();
+            .map(|s| s.map(|sample| sample as f32 / i16::MAX as f32))
+            .collect::<Result<_, _>>()?;
 
         // Extract relevant features from the audio (e.g., spectral features, waveform)
         let sample_rate = audio_reader.spec().sample_rate;
@@ -60,15 +62,17 @@ impl LanguageModel {
             "rms_amplitude": rms_amplitude,
             "zeros_crossing_rate": zeros_crossing_rate,
         });
+
+        // Send request to LLM API and handle potential errors
         let response = client.post(&self.api_url)
             .header("Content-Type", "application/json")
             .header("Authorization", &format!("Bearer {}", self.api_key))
             .body(features.to_string())
-            .send()
-            .expect("Failed to send request to the LLM API");
+            .send()?;
 
-        let tags: Vec<String> = response.json().expect("Failed to parse the LLM API response");
-        tags
+        // Parse the response and handle potential errors
+        let tags: Vec<String> = response.json()?;
+        Ok(tags)
     }
 }
 
@@ -101,12 +105,18 @@ fn main() {
     let audio_file = audio_file.trim();
 
     // Analyze the audio content and generate semantic tags
-    let tags = llm.analyze_audio(audio_file);
-
-    // Display the generated tags
-    println!("Semantic tags for the audio file:");
-    for tag in tags {
-        println!("- {}", tag);
+    match llm.analyze_audio(audio_file) {
+        Ok(tags) => {
+            // Display the generated tags
+            println!("Semantic tags for the audio file:");
+            for tag in tags {
+                println!("- {}", tag);
+            }
+        }
+        Err(e) => {
+            // Handle and display any errors that occurred during analysis
+            println!("Failed to analyze audio: {}", e);
+        }
     }
 
     // Example output:
@@ -152,3 +162,9 @@ fn main() {
 
     println!("Thank you for using the Audio Semantic Analyzer!");
 }
+
+// Possible Errors and Solutions:
+// - **Network Errors**: If there's an issue with the network or API server, `reqwest::Error` will be returned. Solution: Handle errors using `Result` and `?` operator for better error propagation.
+// - **File Handling Errors**: Opening or reading the audio file might fail. Solution: Use `?` operator to propagate errors and handle them in the `main` function.
+// - **Parsing Errors**: If the API response format changes or is invalid, `serde_json::Error` might occur. Solution: Use `?` operator and handle errors gracefully.
+// - **User Input Errors**: User might enter an invalid API key, URL, or file path. Solution: Validate inputs and handle errors gracefully.

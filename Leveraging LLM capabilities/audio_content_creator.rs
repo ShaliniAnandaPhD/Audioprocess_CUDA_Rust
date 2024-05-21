@@ -23,66 +23,72 @@ impl LanguageModel {
     }
 
     // Generate harmonies based on user's input and style preferences
-    fn generate_harmonies(&self, input: &str, style: &str) -> Vec<String> {
+    fn generate_harmonies(&self, input: &str, style: &str) -> Result<Vec<String>, reqwest::Error> {
         let client = Client::new();
         let request_body = json!({
             "input": input,
             "style": style,
             "task": "generate_harmonies"
         });
+
+        // Sending the request to the API
         let response = client.post(&self.api_url)
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Bearer {}", self.api_key))
             .json(&request_body)
-            .send()
-            .expect("Failed to send request to LLM API");
+            .send()?;
 
-        let response_body: serde_json::Value = response.json().expect("Failed to parse LLM API response");
-        response_body["harmonies"].as_array().unwrap().iter()
+        // Parsing the response
+        let response_body: serde_json::Value = response.json()?;
+        Ok(response_body["harmonies"].as_array().unwrap().iter()
             .map(|harmony| harmony.as_str().unwrap().to_string())
-            .collect()
+            .collect())
     }
 
     // Generate riffs based on user's input and style preferences
-    fn generate_riffs(&self, input: &str, style: &str) -> Vec<String> {
+    fn generate_riffs(&self, input: &str, style: &str) -> Result<Vec<String>, reqwest::Error> {
         let client = Client::new();
         let request_body = json!({
             "input": input,
             "style": style,
             "task": "generate_riffs"
         });
+
+        // Sending the request to the API
         let response = client.post(&self.api_url)
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Bearer {}", self.api_key))
             .json(&request_body)
-            .send()
-            .expect("Failed to send request to LLM API");
+            .send()?;
 
-        let response_body: serde_json::Value = response.json().expect("Failed to parse LLM API response");
-        response_body["riffs"].as_array().unwrap().iter()
+        // Parsing the response
+        let response_body: serde_json::Value = response.json()?;
+        Ok(response_body["riffs"].as_array().unwrap().iter()
             .map(|riff| riff.as_str().unwrap().to_string())
-            .collect()
+            .collect())
     }
 
     // Generate backing tracks based on user's input and style preferences
-    fn generate_backing_tracks(&self, input: &str, style: &str) -> Vec<String> {
+    fn generate_backing_tracks(&self, input: &str, style: &str) -> Result<Vec<String>, reqwest::Error> {
         let client = Client::new();
         let request_body = json!({
             "input": input,
             "style": style,
             "task": "generate_backing_tracks"
         });
+
+        // Sending the request to the API
         let response = client.post(&self.api_url)
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Bearer {}", self.api_key))
             .json(&request_body)
-            .send()
-            .expect("Failed to send request to LLM API");
+            .send()?;
 
-        let response_body: serde_json::Value = response.json().expect("Failed to parse LLM API response");
-        response_body["backing_tracks"].as_array().unwrap().iter()
+        // Parsing the response
+        let response_body: serde_json::Value = response.json()?;
+        Ok(response_body["backing_tracks"].as_array().unwrap().iter()
             .map(|track| track.as_str().unwrap().to_string())
-            .collect()
+            .collect())
     }
 }
 
@@ -122,24 +128,36 @@ fn main() {
     let style = style.trim();
 
     // Generate harmonies based on user's input and style preferences
-    let harmonies = llm.generate_harmonies(&input, &style);
-    println!("Generated Harmonies:");
-    for harmony in &harmonies {
-        println!("- {}", harmony);
+    match llm.generate_harmonies(&input, &style) {
+        Ok(harmonies) => {
+            println!("Generated Harmonies:");
+            for harmony in &harmonies {
+                println!("- {}", harmony);
+            }
+        }
+        Err(e) => println!("Failed to generate harmonies: {}", e),
     }
 
     // Generate riffs based on user's input and style preferences
-    let riffs = llm.generate_riffs(&input, &style);
-    println!("Generated Riffs:");
-    for riff in &riffs {
-        println!("- {}", riff);
+    match llm.generate_riffs(&input, &style) {
+        Ok(riffs) => {
+            println!("Generated Riffs:");
+            for riff in &riffs {
+                println!("- {}", riff);
+            }
+        }
+        Err(e) => println!("Failed to generate riffs: {}", e),
     }
 
     // Generate backing tracks based on user's input and style preferences
-    let backing_tracks = llm.generate_backing_tracks(&input, &style);
-    println!("Generated Backing Tracks:");
-    for track in &backing_tracks {
-        println!("- {}", track);
+    match llm.generate_backing_tracks(&input, &style) {
+        Ok(backing_tracks) => {
+            println!("Generated Backing Tracks:");
+            for track in &backing_tracks {
+                println!("- {}", track);
+            }
+        }
+        Err(e) => println!("Failed to generate backing tracks: {}", e),
     }
 
     // Prompt the user for additional content generation or augmentation
@@ -161,24 +179,36 @@ fn main() {
 
         match content_type {
             "harmonies" => {
-                let additional_harmonies = llm.generate_harmonies(&input, &style);
-                println!("Additional Harmonies:");
-                for harmony in &additional_harmonies {
-                    println!("- {}", harmony);
+                match llm.generate_harmonies(&input, &style) {
+                    Ok(additional_harmonies) => {
+                        println!("Additional Harmonies:");
+                        for harmony in &additional_harmonies {
+                            println!("- {}", harmony);
+                        }
+                    }
+                    Err(e) => println!("Failed to generate additional harmonies: {}", e),
                 }
             }
             "riffs" => {
-                let additional_riffs = llm.generate_riffs(&input, &style);
-                println!("Additional Riffs:");
-                for riff in &additional_riffs {
-                    println!("- {}", riff);
+                match llm.generate_riffs(&input, &style) {
+                    Ok(additional_riffs) => {
+                        println!("Additional Riffs:");
+                        for riff in &additional_riffs {
+                            println!("- {}", riff);
+                        }
+                    }
+                    Err(e) => println!("Failed to generate additional riffs: {}", e),
                 }
             }
             "backing_tracks" => {
-                let additional_backing_tracks = llm.generate_backing_tracks(&input, &style);
-                println!("Additional Backing Tracks:");
-                for track in &additional_backing_tracks {
-                    println!("- {}", track);
+                match llm.generate_backing_tracks(&input, &style) {
+                    Ok(additional_backing_tracks) => {
+                        println!("Additional Backing Tracks:");
+                        for track in &additional_backing_tracks {
+                            println!("- {}", track);
+                        }
+                    }
+                    Err(e) => println!("Failed to generate additional backing tracks: {}", e),
                 }
             }
             _ => {
@@ -189,3 +219,10 @@ fn main() {
 
     println!("Thank you for using the Audio Content Creator!");
 }
+
+// Possible Errors:
+// - Network errors while sending the request to the API.
+// - Failure to parse the API response (e.g., if the response format changes).
+// - Unwrapping errors when accessing JSON fields (e.g., if "harmonies", "riffs", or "backing_tracks" fields are missing).
+// - User input errors (e.g., entering invalid API key or URL).
+// - Handling of invalid content types during additional content generation.
