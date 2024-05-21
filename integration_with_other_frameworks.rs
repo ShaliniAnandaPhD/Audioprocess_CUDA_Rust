@@ -1,18 +1,30 @@
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
-use std::io::Cursor;
-use tensorflow::{Graph, Session, SessionRunArgs, Tensor};
+use std::fs::File;
+use std::io::Read;
+use std::error::Error;
+use tensorflow::{Graph, ImportGraphDefOptions, Session, SessionOptions, SessionRunArgs, Tensor};
 
 // Function to load a TensorFlow model from a file
-fn load_model(model_path: &str) -> Result<(Graph, Session), Box<dyn std::error::Error>> {
+fn load_model(model_path: &str) -> Result<(Graph, Session), Box<dyn Error>> {
     // Load the TensorFlow model from a file
     let mut graph = Graph::new();
     let mut proto = Vec::new();
+    
+    // Read the model file into a buffer
     std::fs::File::open(model_path)?.read_to_end(&mut proto)?;
+    // Possible Error: File not found or read permission denied
+    // Solution: Ensure the file path is correct and the file is accessible.
+    
+    // Import the graph definition from the buffer
     graph.import_graph_def(&proto, &ImportGraphDefOptions::new())?;
-
-    // Create a new TensorFlow session
+    // Possible Error: Invalid graph definition format
+    // Solution: Verify that the graph definition file is correct and properly formatted.
+    
+    // Create a new TensorFlow session with the loaded graph
     let session = Session::new(&SessionOptions::new(), &graph)?;
+    // Possible Error: TensorFlow session creation failed
+    // Solution: Ensure TensorFlow is correctly installed and the environment is properly set up.
 
     Ok((graph, session))
 }
@@ -23,24 +35,37 @@ fn generate_audio_samples(
     input_tensor_name: &str,
     output_tensor_name: &str,
     num_samples: usize,
-) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
-    // Create random input data for the model
-    let mut rng = rand::thread_rng();
-    let input_data: Vec<f32> = (0..num_samples).map(|_| rng.gen()).collect();
-
-    // Create input tensor
+) -> Result<Vec<f32>, Box<dyn Error>> {
+    // Generate random input data for the model
+    let input_data: Vec<f32> = (0..num_samples).map(|_| rand::random::<f32>()).collect();
+    // Possible Error: Random data generation failed (unlikely)
+    // Solution: Ensure the random number generator is functioning correctly.
+    
+    // Create input tensor from the input data
     let input_tensor = Tensor::new(&[num_samples as u64])
         .with_values(&input_data)?;
-
-    // Run the TensorFlow session to generate audio samples
+    // Possible Error: Tensor creation failed due to invalid shape or data type
+    // Solution: Verify the input data and tensor dimensions are correct.
+    
+    // Set up arguments for the TensorFlow session run
     let mut args = SessionRunArgs::new();
     args.add_feed(input_tensor_name, 0, &input_tensor);
+    
+    // Request fetching the output tensor
     let output_token = args.request_fetch(output_tensor_name, 0);
-    session.run(&mut args)?;
 
-    // Get the generated audio samples from the output tensor
+    // Run the TensorFlow session
+    session.run(&mut args)?;
+    // Possible Error: TensorFlow session run failed
+    // Solution: Ensure the input tensor names and output tensor names match the model's expectations.
+    
+    // Retrieve the output tensor from the session run arguments
     let output_tensor = args.fetch::<Tensor<f32>>(output_token)?;
-    let samples = output_tensor.iter().cloned().collect();
+    // Possible Error: Fetching the output tensor failed
+    // Solution: Ensure the output tensor name is correct and the model produces output as expected.
+    
+    // Convert the output tensor to a vector of samples
+    let samples: Vec<f32> = output_tensor.iter().cloned().collect();
 
     Ok(samples)
 }
