@@ -339,3 +339,4 @@ We would like to express our gratitude to the following individuals, communities
 ## Contact
 If you have any questions, suggestions, or feedback regarding this repository, please feel free to reach out to me:
 - GitHub: [ShaliniAnandaPhD](https://github.com/ShaliniAnandaPhD)
+- https://twitter.com/SynthCircuit
