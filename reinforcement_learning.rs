@@ -1,35 +1,38 @@
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-use rand::prelude::*;
-use std::cell::RefCell;
-use std::rc::Rc;
-use tch::{nn, Device, Tensor};
+use pyo3::prelude::*; // Importing PyO3 for Python interoperability
+use pyo3::wrap_pyfunction; // Importing PyO3 function wrapping
+use rand::prelude::*; // Importing random number generation utilities
+use std::cell::RefCell; // Importing RefCell for interior mutability
+use std::rc::Rc; // Importing Rc for reference counting
+use tch::{nn, Device, Tensor}; // Importing Torch for tensor operations and neural networks
 
 // Define the audio generation environment
 struct AudioGenerationEnv {
     sample_rate: i64,
     num_samples: i64,
     current_step: i64,
-    generated_audio: Rc<RefCell<Vec<f32>>>,
+    generated_audio: Rc<RefCell<Vec<f32>>>, // Shared mutable vector for generated audio
 }
 
 impl AudioGenerationEnv {
+    // Constructor for initializing the audio generation environment
     fn new(sample_rate: i64, num_samples: i64) -> Self {
         AudioGenerationEnv {
             sample_rate,
             num_samples,
             current_step: 0,
-            generated_audio: Rc::new(RefCell::new(vec![0.0; num_samples as usize])),
+            generated_audio: Rc::new(RefCell::new(vec![0.0; num_samples as usize])), // Initializing the audio buffer with zeros
         }
     }
 
+    // Reset the environment to the initial state
     fn reset(&mut self) {
         self.current_step = 0;
-        self.generated_audio.borrow_mut().fill(0.0);
+        self.generated_audio.borrow_mut().fill(0.0); // Resetting the audio buffer
     }
 
+    // Take a step in the environment by applying an action
     fn step(&mut self, action: f32) -> (Vec<f32>, f32, bool) {
-        // Apply the action to generate audio samples
+        // Generate audio samples based on the action
         let generated_samples = self.generate_audio_samples(action);
 
         // Update the generated audio buffer
@@ -50,17 +53,17 @@ impl AudioGenerationEnv {
         (self.generated_audio.borrow().clone(), reward, done)
     }
 
+    // Generate audio samples based on the given action
     fn generate_audio_samples(&self, action: f32) -> Vec<f32> {
-        // Implement your audio generation logic here based on the action
-        // This is a placeholder implementation that generates random samples
+        // Placeholder implementation that generates random samples
         let num_samples = (self.sample_rate as f32 * 0.1) as usize; // Generate 100ms of audio
         let mut rng = thread_rng();
         (0..num_samples).map(|_| rng.gen_range(-1.0..=1.0) * action).collect()
     }
 
+    // Calculate the reward based on the generated audio
     fn calculate_reward(&self) -> f32 {
-        // Implement your reward calculation logic here based on the generated audio
-        // This is a placeholder implementation that returns a random reward
+        // Placeholder implementation that returns a random reward
         let mut rng = thread_rng();
         rng.gen_range(-1.0..=1.0)
     }
@@ -68,20 +71,22 @@ impl AudioGenerationEnv {
 
 // Define the reinforcement learning agent
 struct RLAgent {
-    model: nn::Sequential,
-    optimizer: nn::Adam,
-    device: Device,
+    model: nn::Sequential, // Neural network model
+    optimizer: nn::Adam, // Optimizer for training the model
+    device: Device, // Device (CPU/GPU) for computations
 }
 
 impl RLAgent {
+    // Constructor for initializing the reinforcement learning agent
     fn new(input_size: i64, hidden_size: i64, output_size: i64, learning_rate: f64) -> Self {
-        let device = Device::cuda_if_available();
-        let vs = nn::VarStore::new(device);
+        let device = Device::cuda_if_available(); // Use GPU if available
+        let vs = nn::VarStore::new(device); // Variable store for the model parameters
         let model = nn::seq()
-            .add(nn::linear(&vs.root(), input_size, hidden_size, Default::default()))
-            .add_fn(|xs| xs.relu())
-            .add(nn::linear(&vs.root(), hidden_size, output_size, Default::default()));
-        let optimizer = nn::Adam::default().build(&vs, learning_rate).unwrap();
+            .add(nn::linear(&vs.root(), input_size, hidden_size, Default::default())) // Input layer
+            .add_fn(|xs| xs.relu()) // Activation function
+            .add(nn::linear(&vs.root(), hidden_size, output_size, Default::default())); // Output layer
+        let optimizer = nn::Adam::default().build(&vs, learning_rate).unwrap(); // Optimizer
+
         RLAgent {
             model,
             optimizer,
@@ -89,12 +94,14 @@ impl RLAgent {
         }
     }
 
+    // Select an action based on the current state
     fn act(&self, state: &[f32]) -> f32 {
-        let state_tensor = Tensor::of_slice(state).to_device(self.device).unsqueeze(0);
-        let action_tensor = self.model.forward(&state_tensor);
-        action_tensor.item()
+        let state_tensor = Tensor::of_slice(state).to_device(self.device).unsqueeze(0); // Convert state to tensor
+        let action_tensor = self.model.forward(&state_tensor); // Forward pass through the model
+        action_tensor.item() // Convert tensor to scalar
     }
 
+    // Train the agent based on the observed transition
     fn train(&mut self, state: &[f32], action: f32, reward: f32, next_state: &[f32]) {
         let state_tensor = Tensor::of_slice(state).to_device(self.device).unsqueeze(0);
         let action_tensor = Tensor::from(action).to_device(self.device);
@@ -141,7 +148,7 @@ fn reinforcement_learning(_py: Python, m: &PyModule) -> PyResult<()> {
 
         // Train the agent for the specified number of episodes
         for episode in 0..num_episodes {
-            env.reset();
+            env.reset(); // Reset the environment for each episode
             let mut state = env.generated_audio.borrow().clone();
             let mut done = false;
 
