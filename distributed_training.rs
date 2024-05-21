@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 use std::sync::Arc;
-use tch::{nn, Device, Tensor};
+use tch::{nn, Device, Tensor, Kind, Reduction};
 use torch_sys::distributed as dist;
 
 // Define the audio generation model
@@ -10,29 +10,31 @@ struct AudioGenerationModel {
 }
 
 impl AudioGenerationModel {
+    // Initialize a new audio generation model
     fn new(input_size: i64, hidden_size: i64, output_size: i64) -> Self {
-        let vs = nn::VarStore::new(Device::Cpu);
-        let model = nn::seq()
-            .add(nn::linear(&vs.root(), input_size, hidden_size, Default::default()))
-            .add_fn(|xs| xs.relu())
-            .add(nn::linear(&vs.root(), hidden_size, output_size, Default::default()));
+        let vs = nn::VarStore::new(Device::Cpu); // Create a variable store for model parameters
+        let model = nn::seq() // Create a sequential model
+            .add(nn::linear(&vs.root(), input_size, hidden_size, Default::default())) // Add a linear layer
+            .add_fn(|xs| xs.relu()) // Add a ReLU activation function
+            .add(nn::linear(&vs.root(), hidden_size, output_size, Default::default())); // Add another linear layer
         AudioGenerationModel { model }
     }
 
+    // Forward pass to generate output from input
     fn forward(&self, input: &Tensor) -> Tensor {
-        self.model.forward(input)
+        self.model.forward(input) // Forward the input through the model
     }
 }
 
 // Define the distributed training function
 fn distributed_train(
-    rank: i64,
-    world_size: i64,
-    model: &Arc<AudioGenerationModel>,
-    data: &[f32],
-    epochs: i64,
-    batch_size: i64,
-    learning_rate: f64,
+    rank: i64, // Rank of the current process
+    world_size: i64, // Total number of processes
+    model: &Arc<AudioGenerationModel>, // Shared model across processes
+    data: &[f32], // Training data
+    epochs: i64, // Number of training epochs
+    batch_size: i64, // Batch size
+    learning_rate: f64, // Learning rate for the optimizer
 ) -> PyResult<()> {
     // Initialize the distributed process group
     dist::init_process_group_default()?;
@@ -41,11 +43,10 @@ fn distributed_train(
     let device = Device::Cpu;
 
     // Move the model to the device
-    let model = Arc::new(model.clone());
     let model = Arc::clone(&model);
 
     // Create the optimizer
-    let mut opt = nn::Adam::default().build(&model.model.vars, learning_rate)?;
+    let mut opt = nn::Adam::default().build(&model.model.vars(), learning_rate)?;
 
     // Distribute the data across processes
     let chunk_size = data.len() as i64 / world_size;
@@ -113,15 +114,15 @@ fn distributed_training(_py: Python, m: &PyModule) -> PyResult<()> {
     #[pyfn(m)]
     #[pyo3(name = "init_distributed_training")]
     fn init_distributed_training_py(
-        rank: i64,
-        world_size: i64,
-        input_size: i64,
-        hidden_size: i64,
-        output_size: i64,
-        data: Vec<f32>,
-        epochs: i64,
-        batch_size: i64,
-        learning_rate: f64,
+        rank: i64, // Rank of the current process
+        world_size: i64, // Total number of processes
+        input_size: i64, // Input size for the model
+        hidden_size: i64, // Hidden layer size for the model
+        output_size: i64, // Output size for the model
+        data: Vec<f32>, // Training data
+        epochs: i64, // Number of training epochs
+        batch_size: i64, // Batch size
+        learning_rate: f64, // Learning rate for the optimizer
     ) -> PyResult<()> {
         // Create the audio generation model
         let model = AudioGenerationModel::new(input_size, hidden_size, output_size);
