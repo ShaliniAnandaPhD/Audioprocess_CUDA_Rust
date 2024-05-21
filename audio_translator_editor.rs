@@ -1,4 +1,4 @@
-// audio_translator_editor.rs
+// File: audio_translator_editor.rs
 
 use std::io;
 
@@ -62,7 +62,7 @@ fn main() {
     let mut model_path = String::new();
     io::stdin()
         .read_line(&mut model_path)
-        .expect("Failed to read input");
+        .expect("Failed to read input"); // Handle I/O error gracefully
     let model_path = model_path.trim();
 
     // Initialize the LLM with the provided model path
@@ -73,7 +73,7 @@ fn main() {
     let mut audio_input = String::new();
     io::stdin()
         .read_line(&mut audio_input)
-        .expect("Failed to read input");
+        .expect("Failed to read input"); // Handle I/O error gracefully
     let audio_input = audio_input.trim();
 
     // Transcribe the audio input
@@ -85,7 +85,7 @@ fn main() {
     let mut target_lang = String::new();
     io::stdin()
         .read_line(&mut target_lang)
-        .expect("Failed to read input");
+        .expect("Failed to read input"); // Handle I/O error gracefully
     let target_lang = target_lang.trim();
 
     // Translate the transcribed text into the target language
