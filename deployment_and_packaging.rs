@@ -4,28 +4,43 @@ use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use tch::{nn, Device};
+use tch::{nn, Device, Tensor};
+use rand::Rng;
 
 // Function to load a pre-trained PyTorch model
 fn load_model(model_path: &str) -> Result<nn::Sequential, Box<dyn std::error::Error>> {
+    // Determine the device to use (CUDA if available, otherwise CPU)
     let device = Device::cuda_if_available();
+    
+    // Load the pre-trained model from the specified path
     let model = nn::Sequential::load(model_path)?;
+
+    // Set the model to evaluation mode
     model.set_eval();
+    
+    // Move the model to the selected device
     model.to_device(device);
+    
+    // Return the loaded model
     Ok(model)
 }
 
 // Function to generate audio samples using a pre-trained PyTorch model
 fn generate_audio_samples(model: &nn::Sequential, num_samples: usize) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
-    // Create random input data for the model
+    // Generate random input data for the model
     let mut rng = rand::thread_rng();
     let input_data: Vec<f32> = (0..num_samples).map(|_| rng.gen()).collect();
+
+    // Convert the input data to a PyTorch tensor
     let input_tensor = Tensor::of_slice(&input_data).view([-1, 1, num_samples as i64]);
 
     // Use the pre-trained model to generate audio samples
     let output_tensor = model.forward(&input_tensor).squeeze();
+    
+    // Extract the output data as a vector of f32
     let output_data = output_tensor.data().as_slice::<f32>()?.to_vec();
 
+    // Return the generated audio samples
     Ok(output_data)
 }
 
@@ -53,6 +68,7 @@ fn package_application(output_dir: &str) -> Result<(), Box<dyn std::error::Error
     let output_executable_path = format!("{}/{}", output_dir, executable_file_name);
     std::fs::copy(executable_path, output_executable_path)?;
 
+    // Return Ok if all operations succeed
     Ok(())
 }
 
