@@ -184,19 +184,19 @@ fn main() {
 }
 
 // Possible Errors and Solutions:
-// - **Model Loading Errors**: If the model path is invalid or the model fails to load, the program will panic. 
+// - Model Loading Errors: If the model path is invalid or the model fails to load, the program will panic. 
 //   Solution: Ensure the model path is correct and handle errors gracefully using `Result` and `?` operator.
-// - **Audio File Errors**: If the audio file path is invalid or the file cannot be opened/read, the program will panic. 
+// - Audio File Error: If the audio file path is invalid or the file cannot be opened/read, the program will panic. 
 //   Solution: Check if the file exists before attempting to open it, and handle errors using `Result` and `?` operator.
-// - **Resampler Errors**: If the resampler fails to process the audio data, the program will panic. 
+// - Resampler Errors: If the resampler fails to process the audio data, the program will panic. 
 //   Solution: Handle errors using `Result` and `?` operator.
-// - **Output File Errors**: If the output file cannot be created or written to, the program will panic. 
+// - Output File Errors: If the output file cannot be created or written to, the program will panic. 
 //   Solution: Handle errors using `Result` and `?` operator, and ensure proper file permissions.
-// - **User Input Errors**: If the user provides invalid input, the program may behave unexpectedly. 
+// - User Input Errors: If the user provides invalid input, the program may behave unexpectedly. 
 //   Solution: Validate user input and provide clear error messages.
 
 // Expected Outputs:
-// - **Model Loading**: A message indicating that the model is being loaded from the specified path.
-// - **Audio Editing**: Suggested edits and effect settings based on the user's description.
-// - **Audio Processing**: Messages indicating the application of edits and effects to the audio file.
-// - **Final Output**: A message confirming that the edits and effects have been applied, and the edited audio is played.
+// - Model Loading: A message indicating that the model is being loaded from the specified path.
+// - Audio Editing: Suggested edits and effect settings based on the user's description.
+// - Audio Processing: Messages indicating the application of edits and effects to the audio file.
+// - Final Output: A message confirming that the edits and effects have been applied, and the edited audio is played.
