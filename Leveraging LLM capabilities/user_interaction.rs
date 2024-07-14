@@ -94,18 +94,18 @@ fn main() {
 }
 
 // Possible Errors and Solutions:
-// - **Reading User Input**: If `io::stdin().read_line` fails, the program will panic.
+// - Reading User Input**: If `io::stdin().read_line` fails, the program will panic.
 //   Solution: The program already uses `.expect("Failed to read user input")` which will print an error message and exit.
-// - **Invalid Commands**: If the user input does not match any known commands, `None` will be returned.
+// - Invalid Commands**: If the user input does not match any known commands, `None` will be returned.
 //   Solution: The program handles this by printing "Invalid command. Please try again."
-// - **Command Processing**: If there are issues within `handle_user_command`, such as unhandled variants in the match statement.
+// - Command Processing**: If there are issues within `handle_user_command`, such as unhandled variants in the match statement.
 //   Solution: Ensure all possible variants of `UserCommand` are covered in the match statement.
-// - **Case Sensitivity**: Commands are converted to lowercase to handle case-insensitive matching.
+// - Case Sensitivity**: Commands are converted to lowercase to handle case-insensitive matching.
 //   Solution: Ensure the input is properly normalized using `.to_lowercase()` before processing.
 
 // Expected Outputs:
-// - **Welcome Message**: A welcome message when the program starts.
-// - **Command Prompt**: A prompt for the user to enter a command.
-// - **Command Responses**: Appropriate responses from Claude based on the user command, such as steps for adjusting settings or navigating the app.
-// - **Invalid Command**: An error message if the user enters an unrecognized command.
-// - **Exit Message**: A goodbye message when the user types 'quit'.
+// - Welcome Message**: A welcome message when the program starts.
+// - Command Prompt**: A prompt for the user to enter a command.
+// - Command Responses**: Appropriate responses from Claude based on the user command, such as steps for adjusting settings or navigating the app.
+// - Invalid Command**: An error message if the user enters an unrecognized command.
+// - Exit Message**: A goodbye message when the user types 'quit'.
