@@ -164,7 +164,7 @@ fn main() {
 }
 
 // Possible Errors and Solutions:
-// - Network Errors**: If there's an issue with the network or API server, `reqwest::Error` will be returned. Solution: Handle errors using `Result` and `?` operator for better error propagation.
-// - File Handling Errors**: Opening or reading the audio file might fail. Solution: Use `?` operator to propagate errors and handle them in the `main` function.
-// - Parsing Errors**: If the API response format changes or is invalid, `serde_json::Error` might occur. Solution: Use `?` operator and handle errors gracefully.
-// - User Input Errors**: User might enter an invalid API key, URL, or file path. Solution: Validate inputs and handle errors gracefully.
+// - Network Errors: If there's an issue with the network or API server, `reqwest::Error` will be returned. Solution: Handle errors using `Result` and `?` operator for better error propagation.
+// - File Handling Errors: Opening or reading the audio file might fail. Solution: Use `?` operator to propagate errors and handle them in the `main` function.
+// - Parsing Errors: If the API response format changes or is invalid, `serde_json::Error` might occur. Solution: Use `?` operator and handle errors gracefully.
+// - User Input Errors: User might enter an invalid API key, URL, or file path. Solution: Validate inputs and handle errors gracefully.
