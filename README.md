@@ -4,6 +4,8 @@ Using open source software without proper attribution or in violation of license
 
 If you're using code or tools from this repository or GitHub, please ensure you maintain all attribution notices and comply with all applicable licenses.
 
+This repository uses a modified MIT license, please review in LICENSE.MD 👆
+
 # Real-Time Audio Processing with Rust, CUDA, and PyTorch
 
 ## Overview
